@@ -22,9 +22,9 @@ const app = express();
 // Enable JSON body parsing middleware for incoming requests
 app.use(express.json());
 
-// Define the main AWP (Agent Workflow Protocol) endpoint
+// Define the main mastra-agent (Agent Workflow Protocol) endpoint
 // This endpoint handles streaming communication with AG-UI agents
-app.post("/awp", async (req: Request, res: Response) => {
+app.post("/mastra-agent", async (req: Request, res: Response) => {
   try {
     // STEP 1: Input Validation
     // Parse and validate the incoming request body against the expected schema
@@ -49,32 +49,29 @@ app.post("/awp", async (req: Request, res: Response) => {
       runId: input.runId,
     };
     res.write(encoder.encode(runStarted));    // STEP 5: Initialize Agent State
-    // Create initial state object to track the weather analysis process
-    // This state will be updated throughout the agent's execution
-    const initialState = {
-      status: "initializing", // Current execution status
-      currentStep: "weather_analysis", // What the agent is currently doing
-      location: null, // Location for weather query (to be extracted)
-      timestamp: new Date().toISOString(), // When the process started
-      processingStage: "starting", // Detailed stage information
-      weatherReport: null, // Final weather report (populated later)
-    };
 
     // STEP 6: Send Initial State Snapshot
     // Provide the client with the initial state of the agent
     const stateSnapshot = {
       type: EventType.STATE_SNAPSHOT,
-      snapshot: initialState,
+      snapshot: {
+        available_cash: 100000,
+        investment_summary: "Investment summary",
+        investment_portfolio: "Investment portfolio",
+        tool_logs: []
+      },
     };
     res.write(encoder.encode(stateSnapshot));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
+   
     // STEP 7: Retrieve Weather Agent from Mastra
     // Get the configured weather agent that will handle the weather queries
-    const weatherAgent = mastra.getAgent("weatherAgent");
+    const stockAnalysis = mastra.getWorkflow('stockAnalysisWorkflow');
 
     // STEP 8: Validate Agent Availability
     // Ensure the weather agent is properly configured and available
-    if (!weatherAgent) {
+    if (!stockAnalysis) {
       throw new Error("Weather agent not found");
     }    // STEP 9: Convert Message Format
     // Transform AG-UI message format to Mastra-compatible format
@@ -92,56 +89,18 @@ app.post("/awp", async (req: Request, res: Response) => {
     // Parse the user's message to identify the location for weather query
     // This helps with state tracking and provides context to the user
     const userMessage = input.messages.find((msg) => msg.role === "user");
-    const extractedLocation = extractLocationFromMessage(
-      userMessage?.content || ""
-    );
-
-    // STEP 11: Update State - Processing Request
-    // Notify client that we're now processing the user's request
-    // Include location information if successfully extracted
-    const processingStateDelta = {
-      type: EventType.STATE_DELTA,
-      delta: [
-        { op: "replace", path: "/status", value: "processing" },
-        { op: "replace", path: "/processingStage", value: "analyzing_request" },
-        // Conditionally add location if extracted from user message
-        ...(extractedLocation
-          ? [{ op: "replace", path: "/location", value: extractedLocation }]
-          : []),
-      ],
-    };
-    res.write(encoder.encode(processingStateDelta));    // STEP 12: Update State - API Call Phase
-    // Inform client that we're now fetching weather data from external APIs
-    const apiCallStateDelta = {
-      type: EventType.STATE_DELTA,
-      delta: [
-        {
-          op: "replace",
-          path: "/processingStage",
-          value: "fetching_weather_data",
-        },
-      ],
-    };
-    res.write(encoder.encode(apiCallStateDelta));
+    
 
     // STEP 13: Execute Weather Agent
     // Call Mastra's weather agent with the processed messages
     // This will use the configured tools and models to generate a response
-    const result = await weatherAgent.generate(mastraMessages);
-
+    const result = await stockAnalysis.createRunAsync();
+    const result2 = await result.start({
+      inputData : mastraMessages,
+    })
+    console.log(result2);
     // STEP 14: Update Final State
     // Mark the process as completed and include the weather report
-    const finalStateDelta = {
-      type: EventType.STATE_DELTA,
-      delta: [
-        { op: "replace", path: "/status", value: "completed" },
-        { op: "replace", path: "/processingStage", value: "finished" },
-        { op: "replace", path: "/timestamp", value: new Date().toISOString() },
-        { op: "replace", path: "/weatherReport", value: result.text },
-      ],
-    };
-    res.write(encoder.encode(finalStateDelta));    // STEP 15: Generate Unique Message ID
-    // Create a unique identifier for the assistant's response message
     const messageId = uuidv4();
 
     // STEP 16: Start Text Message Stream
@@ -152,10 +111,11 @@ app.post("/awp", async (req: Request, res: Response) => {
       role: "assistant",
     };
     res.write(encoder.encode(textMessageStart));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     // STEP 17: Prepare Response Content
     // Extract the generated text from Mastra's response
-    const response = result.text;
+    const response = "adsfg";
 
     // STEP 18: Stream Response in Chunks
     // Split the response into smaller chunks for smoother streaming experience
@@ -193,7 +153,8 @@ app.post("/awp", async (req: Request, res: Response) => {
 
     // STEP 21: Close SSE Connection
     // End the response stream to complete the HTTP request
-    res.end();  } catch (error) {
+    res.end();
+  } catch (error) {
     // ERROR HANDLING SECTION
     // Handle any errors that occur during agent execution
     console.error("Error during streaming:", error);
@@ -299,7 +260,7 @@ function extractLocationFromMessage(content: string): string | null {
       return match[1].trim();
     }
   }
-  
+
   // Return null if no location pattern is found
   return null;
 }
@@ -308,5 +269,5 @@ function extractLocationFromMessage(content: string): string | null {
 // Configure and start the HTTP server on port 8000
 app.listen(8000, () => {
   console.log("Server running on http://localhost:8000");
-  console.log("AG-UI endpoint available at http://localhost:8000/awp");
+  console.log("AG-UI endpoint available at http://localhost:8000/mastra-agent");
 });

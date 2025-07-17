@@ -6,7 +6,7 @@ import { weatherTool } from "../tools/weather-tool";
 import { weatherWorkflow } from "../workflows/weather-workflow";
 
 export const weatherAgent = new Agent({
-  name: "Weather Agent",
+  name: "Stock Analyst Agent",
   instructions: `
       You are a helpful weather assistant that provides accurate weather information.
 

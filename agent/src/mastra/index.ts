@@ -1,13 +1,12 @@
 import { Mastra } from "@mastra/core/mastra";
 import { PinoLogger } from "@mastra/loggers";
-import { LibSQLStore } from "@mastra/libsql";
-
-import { weatherAgent } from "./agents/weather-agent";
-import { weatherWorkflow } from "./workflows/weather-workflow";
+import { LibSQLStore } from "@mastra/libsql"; 
+import { stockAnalysisAgent } from "./agents/stock-analysis-agent";
+import { stockAnalysisWorkflow } from "./workflows/stock-analysis-workflow";
 
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow },
-  agents: { weatherAgent },
+  workflows: { stockAnalysisWorkflow },
+  agents: { stockAnalysisAgent },
   storage: new LibSQLStore({
     // stores telemetry, evals, ... into memory storage, if it needs to persist, change to file:../mastra.db
     url: ":memory:",
