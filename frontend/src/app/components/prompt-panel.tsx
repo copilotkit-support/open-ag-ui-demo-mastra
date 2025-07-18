@@ -57,7 +57,7 @@ export function PromptPanel({ availableCash }: PromptPanelProps) {
             "--copilot-kit-secondary-contrast-color": "#808080",
           } as any
         }
-      > <CopilotChat className="h-[74vh] hide-scrollbar" labels={
+      > <CopilotChat className="h-[77vh] hide-scrollbar" labels={
         {
           initial: `I am a Mastra AI agent designed to analyze investment opportunities and track stock performance over time. How can I help you with your investment query? For example, you can ask me to analyze a stock like "Invest in Apple with 10k dollars since Jan 2023". \n\nNote: The AI agent has access to stock data from the past 4 years only`
         }

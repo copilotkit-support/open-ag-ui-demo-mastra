@@ -86,10 +86,6 @@ export default function OpenStocksCanvas() {
     }
   })
 
-  useEffect(() => {
-    console.log(state, "state")
-  }, [state])
-
   useCoAgentStateRender({
     name: "mastraAgent",
     render: ({ state }) => <ToolLogs logs={state.toolLogs} />

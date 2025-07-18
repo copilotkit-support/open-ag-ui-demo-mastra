@@ -83,8 +83,9 @@ const fetchInformationFromUserQuery = createStep({
         return msg
       });
       const model = new OpenAI()
+      console.log(data.messages[0].content,"PROMPT");
       const response = await model.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4.1-mini",
         messages: data.messages,
         tools: [userQueryExtractionTool as any],
         tool_choice: "auto"
@@ -117,6 +118,7 @@ const fetchInformationFromUserQuery = createStep({
         else {
           toolResult = response?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments || {};
         }
+        console.log(toolResult,"TOOL RESULT");
         if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
           let index = inputData.toolLogs.length - 1;
           inputData.emitEvent({
