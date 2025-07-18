@@ -92,7 +92,7 @@ export default function OpenStocksCanvas() {
 
   useCoAgentStateRender({
     name: "mastraAgent",
-    render: ({state}) => <ToolLogs logs={state.toolLogs} />
+    render: ({ state }) => <ToolLogs logs={state.toolLogs} />
   })
 
   useCopilotAction({
@@ -118,7 +118,7 @@ export default function OpenStocksCanvas() {
                 onClick={() => {
                   debugger
                   if (respond) {
-                    // setTotalCash(args?.investment_summary?.cash)
+                    setTotalCash(args?.availableCash as number)
                     setCurrentState({
                       ...currentState,
                       // @ts-ignore
@@ -127,6 +127,7 @@ export default function OpenStocksCanvas() {
                       allocations: args?.allocations,
                       bullInsights: args?.bullInsights || [],
                       bearInsights: args?.bearInsights || [],
+                      totalReturns: args?.totalReturns.reduce((acc: number, val: any) => acc + val.retsNum, 0)
                       // returnsData: Object.entries(args?.investment_summary?.percent_return_per_stock).map(([ticker, return1]) => ({
                       //   ticker,
                       //   return: return1 as number
@@ -141,14 +142,14 @@ export default function OpenStocksCanvas() {
                       // totalReturns: (Object.values(args?.investment_summary?.returns) as number[])
                       //   .reduce((acc, val) => acc + val, 0)
                     })
-                    // setInvestedAmount(
-                    //   (Object.values(args?.investment_summary?.total_invested_per_stock) as number[])
-                    //     .reduce((acc, val) => acc + val, 0)
-                    // )
-                    // setState({
-                    //   ...state,
-                    //   availableCash: totalCash,
-                    // })
+                    setInvestedAmount(
+                      totalCash - (args?.availableCash as number)
+                    )
+                    setState({
+                      ...state,
+                      availableCash: args?.availableCash as number,
+                      investmentPortfolio: args?.investmentPortfolio as InvestmentPortfolio[]
+                    })
                     respond("Data rendered successfully. Provide summary of the investments by not making any tool calls")
                   }
                 }}
@@ -243,15 +244,15 @@ export default function OpenStocksCanvas() {
       id: "aapl-nvda",
       trigger: "apple nvidia",
       performanceData: [
-        { date: "Jan 2023", portfolioValue : 10000, benchmarkValue: 10000 },
-        { date: "Mar 2023", portfolioValue : 10200, benchmarkValue: 10200 },
-        { date: "Jun 2023", portfolioValue : 11000, benchmarkValue: 11000 },
-        { date: "Sep 2023", portfolioValue : 10800, benchmarkValue: 10800 },
-        { date: "Dec 2023", portfolioValue : 11500, benchmarkValue: 11500 },
-        { date: "Mar 2024", portfolioValue : 12200, benchmarkValue: 12200 },
-        { date: "Jun 2024", portfolioValue : 12800, benchmarkValue: 12800 },
-        { date: "Sep 2024", portfolioValue : 13100, benchmarkValue: 13100 },
-        { date: "Dec 2024", portfolioValue : 13600, benchmarkValue: 13600 },
+        { date: "Jan 2023", portfolioValue: 10000, benchmarkValue: 10000 },
+        { date: "Mar 2023", portfolioValue: 10200, benchmarkValue: 10200 },
+        { date: "Jun 2023", portfolioValue: 11000, benchmarkValue: 11000 },
+        { date: "Sep 2023", portfolioValue: 10800, benchmarkValue: 10800 },
+        { date: "Dec 2023", portfolioValue: 11500, benchmarkValue: 11500 },
+        { date: "Mar 2024", portfolioValue: 12200, benchmarkValue: 12200 },
+        { date: "Jun 2024", portfolioValue: 12800, benchmarkValue: 12800 },
+        { date: "Sep 2024", portfolioValue: 13100, benchmarkValue: 13100 },
+        { date: "Dec 2024", portfolioValue: 13600, benchmarkValue: 13600 },
       ],
       allocations: [],
       returnsData: [],

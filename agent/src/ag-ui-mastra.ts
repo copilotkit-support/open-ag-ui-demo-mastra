@@ -26,23 +26,14 @@ app.use(express.json());
 // This endpoint handles streaming communication with AG-UI agents
 app.post("/mastra-agent", async (req: Request, res: Response) => {
   try {
-    // STEP 1: Input Validation
-    // Parse and validate the incoming request body against the expected schema
-    // This ensures we have all required fields (threadId, runId, messages, etc.)
     const input: RunAgentInput = RunAgentInputSchema.parse(req.body);
 
-    // STEP 2: Setup Server-Sent Events (SSE) Stream
-    // Configure response headers for real-time streaming communication
     res.setHeader("Content-Type", "text/event-stream"); // Enable SSE
     res.setHeader("Cache-Control", "no-cache"); // Prevent caching
     res.setHeader("Connection", "keep-alive"); // Keep connection open
 
-    // STEP 3: Initialize Event Encoder
-    // Create encoder to format events according to AG-UI protocol
     const encoder = new EventEncoder();
 
-    // STEP 4: Send Run Started Event
-    // Notify the client that agent execution has begun
     const runStarted = {
       type: EventType.RUN_STARTED,
       threadId: input.threadId,
@@ -50,8 +41,6 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
     };
     res.write(encoder.encode(runStarted));    // STEP 5: Initialize Agent State
 
-    // STEP 6: Send Initial State Snapshot
-    // Provide the client with the initial state of the agent
     const stateSnapshot = {
       type: EventType.STATE_SNAPSHOT,
       snapshot: {
@@ -65,25 +54,7 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
 
-    // STEP 7: Retrieve Weather Agent from Mastra
-    // Get the configured weather agent that will handle the weather queries
     const stockAnalysis = mastra.getWorkflow('stockAnalysisWorkflow');
-
-    // STEP 8: Validate Agent Availability
-    // Ensure the weather agent is properly configured and available
-    if (!stockAnalysis) {
-      throw new Error("Weather agent not found");
-    }    
-
-    const mastraMessages = input.messages
-      .filter((msg: Message) =>
-        ["user", "system", "assistant"].includes(msg.role)
-      )
-      .map((msg: Message) => ({
-        role: msg.role as "user" | "system" | "assistant",
-        content: msg.content || "",
-      }));
-
 
     function emitEvent(data: any) {
       res.write(encoder.encode(data));
@@ -92,16 +63,10 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
     const result = await workflow.start({
       inputData: {
         messages: input.messages,
-        availableCash: 100000,
+        availableCash: input.state?.availableCash || 1000000,
         emitEvent: emitEvent,
         investmentPortfolio: input.state?.investmentPortfolio || [],
         toolLogs: []
-        // investmentSummary : {
-        //   totalReturns : 0,
-        //   currentPortfolioValue : 0,
-        //   bearInsights : [],
-        //   bullInsights : [],
-        // },
       }
 
     })
@@ -113,8 +78,8 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
       ]
     })
     await new Promise((resolve) => setTimeout(resolve, 0));
-    // console.log(result2);
     const messageId = uuidv4();
+    
     if (result?.status === "success" && result?.result?.result?.length > 0) {
       const toolcallStart = {
         type: EventType.TOOL_CALL_START,

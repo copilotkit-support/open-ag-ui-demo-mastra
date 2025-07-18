@@ -31,6 +31,10 @@ const fetchInformationFromUserQuery = createStep({
       status: z.string().describe("The status of the message")
     })).describe("The tool logs of the workflow"),
     emitEvent: z.function(),
+    investmentPortfolio: z.array(z.object({
+      ticker: z.string(),
+      amount: z.number()
+    })).describe("The investment portfolio of the user"),
     investmentDate: z.string().describe("The date of investment from which user wants to invest"),
     tickers: z.array(z.string()).describe("The array of tickers or stocks that user wants to invest in"),
     amount: z.array(z.number()).describe("The amount of money to invest in each ticker or stock"),
@@ -43,7 +47,7 @@ const fetchInformationFromUserQuery = createStep({
     try {
       let data = inputData;
       await new Promise(resolve => setTimeout(resolve, 0));
-      data.messages[0].content = STOCK_ANALYST_PROMPT.replace("{portfolioDataContext}", JSON.stringify(inputData.investmentPortfolio));
+      data.messages[0].content = STOCK_ANALYST_PROMPT.replace("{{PORTFOLIO_DATA_CONTEXT}}", JSON.stringify(inputData.investmentPortfolio));
       if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
         inputData.emitEvent({
           type: EventType.STATE_DELTA,
@@ -129,6 +133,7 @@ const fetchInformationFromUserQuery = createStep({
           ...toolResult,
           skip: false,
           availableCash: inputData.availableCash,
+          investmentPortfolio: inputData.investmentPortfolio,
           emitEvent: inputData.emitEvent,
           textMessage: '',
           toolLogs: inputData.toolLogs
@@ -152,6 +157,10 @@ const gatherStockInformation = createStep({
       status: z.string().describe("The status of the message")
     })).describe("The tool logs of the workflow"),
     textMessage: z.string().describe("The text message to display to the user"),
+    investmentPortfolio: z.array(z.object({
+      ticker: z.string(),
+      amount: z.number()
+    })).describe("The investment portfolio of the user"),
     investmentDate: z.string().describe("The date of investment from which user wants to invest"),
     tickers: z.array(z.string()).describe("The array of tickers or stocks that user wants to invest in"),
     amount: z.array(z.number()).describe("The amount of money to invest in each ticker or stock"),
@@ -166,6 +175,10 @@ const gatherStockInformation = createStep({
       message: z.string().describe("The message to display to the user"),
       status: z.string().describe("The status of the message")
     })).describe("The tool logs of the workflow"),
+    investmentPortfolio: z.array(z.object({
+      ticker: z.string(),
+      amount: z.number()
+    })).describe("The investment portfolio of the user"),
     textMessage: z.string().describe("The text message to display to the user"),
     investmentDate: z.string().describe("The date of investment from which user wants to invest"),
     tickers: z.array(z.string()).describe("The array of tickers or stocks that user wants to invest in"),
@@ -324,6 +337,10 @@ const calculateInvestmentReturns = createStep({
     amount: z.array(z.number()),
     intervalOfInvestment: z.string(),
     availableCash: z.number(),
+    investmentPortfolio: z.array(z.object({
+      ticker: z.string(),
+      amount: z.number()
+    })).describe("The investment portfolio of the user"),
     preparedStockData: z.array(z.object({
       ticker: z.string(),
       data: z.array(z.object({
@@ -354,7 +371,8 @@ const calculateInvestmentReturns = createStep({
     })),
     totalReturns: z.array(z.object({
       ticker: z.string().describe("The ticker value"),
-      rets: z.number().describe("The total returns from the ticker")
+      rets: z.number().describe("The total returns from the ticker"),
+      retsNum: z.number().describe("The total returns from the ticker in number")
     })),
     allocations: z.array(z.object({
       ticker: z.string().describe("The ticker data"),
@@ -362,7 +380,11 @@ const calculateInvestmentReturns = createStep({
       value: z.number().describe("Current value of ticker in the portfolio"),
       returnPercent: z.number().describe("Percentage of return from this ticker")
     })),
-    emitEvent: z.function()
+    emitEvent: z.function(),
+    investmentPortfolio: z.array(z.object({
+      ticker: z.string(),
+      amount: z.number()
+    })).describe("The investment portfolio of the user")
   }),
   execute: async ({ inputData }) => {
     try {
@@ -440,8 +462,9 @@ const calculateInvestmentReturns = createStep({
           const lastEntry = stock.data[stock.data.length - 1];
           const shares = sharesByTicker[stock.ticker];
           const finalValue = shares * lastEntry.close;
+          const retsNum = finalValue - investAmount;
           const rets = investAmount > 0 ? ((finalValue - investAmount) / investAmount) * 100 : 0; // Return as percentage
-          return { ticker: stock.ticker, rets };
+          return { ticker: stock.ticker, rets, retsNum };
         });
         // Calculate allocations
         const allocations = preparedStockData.map((stock, idx) => {
@@ -480,7 +503,11 @@ const calculateInvestmentReturns = createStep({
           totalReturns,
           allocations,
           toolLogs: inputData.toolLogs,
-          emitEvent: inputData.emitEvent
+          emitEvent: inputData.emitEvent,
+          investmentPortfolio: tickers.map((ticker, idx) => ({
+            ticker,
+            amount: amount[idx]
+          }))
         };
       }
       else {
@@ -509,6 +536,10 @@ const gatherInsights = createStep({
       message: z.string().describe("The message to display to the user"),
       status: z.string().describe("The status of the message")
     })).describe("The tool logs of the workflow"),
+    investmentPortfolio: z.array(z.object({
+      ticker: z.string(),
+      amount: z.number()
+    })).describe("The investment portfolio of the user"),
     textMessage: z.string().describe("The text message to display to the user"),
     tickers: z.array(z.string()).describe("The array of tickers or stocks that user wants to invest in"),
     availableCash: z.number().describe("Available cash after investments"),
@@ -519,7 +550,8 @@ const gatherInsights = createStep({
     })),
     totalReturns: z.array(z.object({
       ticker: z.string().describe("The ticker value"),
-      rets: z.number().describe("The total returns from the ticker")
+      rets: z.number().describe("The total returns from the ticker"),
+      retsNum: z.number().describe("The total returns from the ticker in number")
     })),
     allocations: z.array(z.object({
       ticker: z.string().describe("The ticker data"),
@@ -535,6 +567,10 @@ const gatherInsights = createStep({
       message: z.string().describe("The message to display to the user"),
       status: z.string().describe("The status of the message")
     })).describe("The tool logs of the workflow"),
+    investmentPortfolio: z.array(z.object({
+      ticker: z.string(),
+      amount: z.number()
+    })).describe("The investment portfolio of the user"),
     textMessage: z.string().describe("The text message to display to the user"),
     availableCash: z.number().describe("Available cash after investments"),
     result: z.array(z.object({
@@ -544,7 +580,8 @@ const gatherInsights = createStep({
     })),
     totalReturns: z.array(z.object({
       ticker: z.string().describe("The ticker value"),
-      rets: z.number().describe("The total returns from the ticker")
+      rets: z.number().describe("The total returns from the ticker"),
+      retsNum: z.number().describe("The total returns from the ticker in number")
     })),
     allocations: z.array(z.object({
       ticker: z.string().describe("The ticker data"),
@@ -649,6 +686,10 @@ const stockAnalysisWorkflow = createWorkflow({
   }),
   outputSchema: z.object({
     skip: z.boolean().describe("Whether to skip this step"),
+    investmentPortfolio: z.array(z.object({
+      ticker: z.string(),
+      amount: z.number()
+    })).describe("The investment portfolio of the user"),
     textMessage: z.string().describe("The text message to display to the user"),
     toolLogs: z.array(z.object({
       message: z.string().describe("The message to display to the user"),
@@ -662,7 +703,8 @@ const stockAnalysisWorkflow = createWorkflow({
     })),
     totalReturns: z.array(z.object({
       ticker: z.string().describe("The ticker value"),
-      rets: z.number().describe("The total returns from the ticker")
+      rets: z.number().describe("The total returns from the ticker"),
+      retsNum: z.number().describe("The total returns from the ticker in number")
     })),
     allocations: z.array(z.object({
       ticker: z.string().describe("The ticker data"),
