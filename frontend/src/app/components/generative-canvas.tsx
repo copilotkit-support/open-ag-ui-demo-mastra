@@ -29,8 +29,8 @@ export function GenerativeCanvas({ portfolioState, setSelectedStock, sandBoxPort
                 data={
                   (portfolioState?.performanceData || []).map(d => ({
                     ...d,
-                    portfolio: d.portfolio ?? 0,
-                    spy: d.spy ?? 0,
+                    portfolioValue: d.portfolioValue ?? 0,
+                    benchmarkValue: d.benchmarkValue ?? 0,
                   }))
                 }
               />
@@ -121,8 +121,8 @@ export function GenerativeCanvas({ portfolioState, setSelectedStock, sandBoxPort
                 data={
                   (portfolioState?.performanceData || []).map(d => ({
                     ...d,
-                    portfolio: d.portfolio ?? 0,
-                    spy: d.spy ?? 0,
+                    portfolioValue: d.portfolioValue ?? 0,
+                    benchmarkValue: d.benchmarkValue ?? 0,
                   }))
                 }
               />

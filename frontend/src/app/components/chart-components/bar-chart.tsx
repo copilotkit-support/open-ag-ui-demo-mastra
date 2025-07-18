@@ -2,9 +2,9 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 
-interface BarChartData {
+export interface BarChartData {
   ticker: string
-  return: number
+  rets: number
 }
 
 interface BarChartComponentProps {
@@ -48,7 +48,7 @@ export function BarChartComponent({ data, size = "normal", onClick }: BarChartCo
                 // @ts-ignore
                 onClick?.(data.payload.ticker as string)
               }
-            }} dataKey="return" fill="#86ECE4" radius={[2, 2, 0, 0]} />
+            }} dataKey="rets" fill="#86ECE4" radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

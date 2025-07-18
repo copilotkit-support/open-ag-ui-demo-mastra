@@ -2,10 +2,10 @@
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
-interface LineChartData {
+export interface LineChartData {
   date: string
-  portfolio: number
-  spy: number
+  portfolioValue: number
+  benchmarkValue: number
 }
 
 interface LineChartComponentProps {
@@ -53,8 +53,8 @@ export function LineChartComponent({ data, size = "normal" }: LineChartComponent
                 fontWeight: 500,
               }}
             />
-            <Line type="monotone" dataKey="portfolio" stroke="#86ECE4" strokeWidth={2} name="Portfolio" dot={false} />
-            <Line type="monotone" dataKey="spy" stroke="#BEC9FF" strokeWidth={2} name="SPY" dot={false} />
+            <Line type="monotone" dataKey="portfolioValue" stroke="#86ECE4" strokeWidth={2} name="Portfolio" dot={false} />
+            <Line type="monotone" dataKey="benchmarkValue" stroke="#BEC9FF" strokeWidth={2} name="SPY" dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>

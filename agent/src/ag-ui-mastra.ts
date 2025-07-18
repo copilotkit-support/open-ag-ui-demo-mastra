@@ -55,16 +55,16 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
     const stateSnapshot = {
       type: EventType.STATE_SNAPSHOT,
       snapshot: {
-        available_cash: 100000,
-        investment_summary: "Investment summary",
-        investment_portfolio: "Investment portfolio",
-        tool_logs: []
+        availableCash: input.state?.availableCash || 100000,
+        investmentSummary: input.state?.investmentSummary || {},
+        investmentPortfolio: input.state?.investmentPortfolio || [],
+        toolLogs: []
       },
     };
     res.write(encoder.encode(stateSnapshot));
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-   
+
     // STEP 7: Retrieve Weather Agent from Mastra
     // Get the configured weather agent that will handle the weather queries
     const stockAnalysis = mastra.getWorkflow('stockAnalysisWorkflow');
@@ -89,58 +89,85 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
     // Parse the user's message to identify the location for weather query
     // This helps with state tracking and provides context to the user
     const userMessage = input.messages.find((msg) => msg.role === "user");
-    
+
+    function emitEvent(data: any) {
+      res.write(encoder.encode(data));
+    }
 
     // STEP 13: Execute Weather Agent
     // Call Mastra's weather agent with the processed messages
     // This will use the configured tools and models to generate a response
     const result = await stockAnalysis.createRunAsync();
     const result2 = await result.start({
-      inputData : mastraMessages,
+      inputData: {
+        messages: mastraMessages,
+        availableCash: 100000,
+        emitEvent: emitEvent,
+        investmentPortfolio: input.state?.investmentPortfolio || []
+        // investmentSummary : {
+        //   totalReturns : 0,
+        //   currentPortfolioValue : 0,
+        //   bearInsights : [],
+        //   bullInsights : [],
+        // },
+      }
+
     })
-    console.log(result2);
-    // STEP 14: Update Final State
-    // Mark the process as completed and include the weather report
+    // console.log(result2);
     const messageId = uuidv4();
-
-    // STEP 16: Start Text Message Stream
-    // Signal the beginning of the assistant's text response
-    const textMessageStart = {
-      type: EventType.TEXT_MESSAGE_START,
-      messageId,
-      role: "assistant",
-    };
-    res.write(encoder.encode(textMessageStart));
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
-    // STEP 17: Prepare Response Content
-    // Extract the generated text from Mastra's response
-    const response = "adsfg";
-
-    // STEP 18: Stream Response in Chunks
-    // Split the response into smaller chunks for smoother streaming experience
-    // This simulates real-time generation and provides better UX
-    const chunkSize = 100; // Number of characters per chunk
-    for (let i = 0; i < response.length; i += chunkSize) {
-      const chunk = response.slice(i, i + chunkSize);
-
-      // Send each chunk as a separate content event
-      const textMessageContent = {
-        type: EventType.TEXT_MESSAGE_CONTENT,
+    if (result2?.status === "success" && result2?.result?.result?.length > 0) {
+      const toolcallStart = {
+        type: EventType.TOOL_CALL_START,
+        toolCallId: uuidv4(),
+        toolCallName: "render_standard_charts_and_table",
+      }
+      emitEvent(toolcallStart);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const toolcallArgs = {
+        type: EventType.TOOL_CALL_ARGS,
+        toolCallId: toolcallStart.toolCallId,
+        delta: JSON.stringify(result2.result)
+      }
+      emitEvent(toolcallArgs);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const toolcallEnd = {
+        type: EventType.TOOL_CALL_END,
+        toolCallId: toolcallStart.toolCallId,
+      }
+      emitEvent(toolcallEnd);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    else {
+      const textMessageStart = {
+        type: EventType.TEXT_MESSAGE_START,
         messageId,
-        delta: chunk,
+        role: "assistant",
       };
-      res.write(encoder.encode(textMessageContent));
+      res.write(encoder.encode(textMessageStart));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // Add small delay between chunks to simulate natural typing
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    }    // STEP 19: End Text Message Stream
-    // Signal that the assistant's message is complete
-    const textMessageEnd = {
-      type: EventType.TEXT_MESSAGE_END,
-      messageId,
-    };
-    res.write(encoder.encode(textMessageEnd));
+      const response = "adsfg";
+
+      const chunkSize = 100; // Number of characters per chunk
+      for (let i = 0; i < response.length; i += chunkSize) {
+        const chunk = response.slice(i, i + chunkSize);
+
+        const textMessageContent = {
+          type: EventType.TEXT_MESSAGE_CONTENT,
+          messageId,
+          delta: chunk,
+        };
+        res.write(encoder.encode(textMessageContent));
+
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      const textMessageEnd = {
+        type: EventType.TEXT_MESSAGE_END,
+        messageId,
+      };
+      res.write(encoder.encode(textMessageEnd));
+    }
+
 
     // STEP 20: Finalize Agent Run
     // Send final event to indicate the entire agent run is complete

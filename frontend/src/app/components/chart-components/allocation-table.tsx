@@ -1,12 +1,12 @@
-export interface Allocation {
+export interface AllocationTableData {
   ticker: string
-  allocation: number
-  currentValue: number
-  totalReturn: number
+  percentOfAllocation: number
+  value: number
+  returnPercent: number
 }
 
 interface AllocationTableComponentProps {
-  allocations: Allocation[] | [] | undefined
+  allocations: AllocationTableData[] | [] | undefined
   size?: "normal" | "small"
 }
 
@@ -37,14 +37,14 @@ export function AllocationTableComponent({ allocations, size = "normal" }: Alloc
               <td className={`font-medium text-[#030507] font-['Plus_Jakarta_Sans'] ${padding} ${fontSize}`}>
                 {allocation.ticker}
               </td>
-              <td className={`text-[#575758] font-['Plus_Jakarta_Sans'] ${padding} ${fontSize}`}>{allocation.allocation.toFixed(2)}%</td>
+              <td className={`text-[#575758] font-['Plus_Jakarta_Sans'] ${padding} ${fontSize}`}>{allocation.percentOfAllocation.toFixed(2)}%</td>
               <td className={`text-[#575758] font-['Plus_Jakarta_Sans'] ${padding} ${fontSize}`}>
-                ${(allocation.currentValue / 1000).toFixed(1)}K
+                ${(allocation.value).toFixed(1)}K
               </td>
               <td className={`font-medium font-['Plus_Jakarta_Sans'] ${padding} ${fontSize}`}>
-                <span className={allocation.totalReturn >= 0 ? "text-[#1B606F]" : "text-red-600"}>
-                  {allocation.totalReturn >= 0 ? "+" : ""}
-                  {allocation.totalReturn.toFixed(1)}%
+                <span className={allocation.returnPercent >= 0 ? "text-[#1B606F]" : "text-red-600"}>
+                  {allocation.returnPercent >= 0 ? "+" : ""}
+                  {allocation.returnPercent.toFixed(1)}%
                 </span>
               </td>
             </tr>

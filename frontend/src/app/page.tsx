@@ -6,9 +6,9 @@ import { GenerativeCanvas } from "./components/generative-canvas"
 import { ComponentTree } from "./components/component-tree"
 import { CashPanel } from "./components/cash-panel"
 import { useCoAgent, useCoAgentStateRender, useCopilotAction, useCopilotReadable } from "@copilotkit/react-core"
-import { BarChartComponent } from "@/app/components/chart-components/bar-chart"
-import { LineChartComponent } from "@/app/components/chart-components/line-chart"
-import { AllocationTableComponent } from "@/app/components/chart-components/allocation-table"
+import { BarChartComponent, BarChartData } from "@/app/components/chart-components/bar-chart"
+import { LineChartComponent, LineChartData } from "@/app/components/chart-components/line-chart"
+import { AllocationTableComponent, AllocationTableData } from "@/app/components/chart-components/allocation-table"
 import { useCopilotChatSuggestions } from "@copilotkit/react-ui"
 import { INVESTMENT_SUGGESTION_PROMPT } from "@/utils/prompts"
 import { ToolLogs } from "./components/tool-logs"
@@ -20,8 +20,8 @@ export interface PortfolioState {
   currentPortfolioValue?: number
   performanceData: Array<{
     date: string
-    portfolio: number
-    spy: number
+    portfolioValue: number
+    benchmarkValue: number
   }>
   allocations: Array<{
     ticker: string
@@ -31,7 +31,7 @@ export interface PortfolioState {
   }>
   returnsData: Array<{
     ticker: string
-    return: number
+    rets: number
   }>
   bullInsights: Array<{
     title: string
@@ -80,9 +80,9 @@ export default function OpenStocksCanvas() {
   const { state, setState } = useCoAgent({
     name: "mastraAgent",
     initialState: {
-      available_cash: totalCash,
-      investment_summary: {} as any,
-      investment_portfolio: [] as InvestmentPortfolio[]
+      availableCash: totalCash,
+      investmentSummary: {} as any,
+      investmentPortfolio: [] as InvestmentPortfolio[]
     }
   })
 
@@ -104,20 +104,12 @@ export default function OpenStocksCanvas() {
       }, [args])
       return (
         <>
-          {(args?.investment_summary?.percent_allocation_per_stock && args?.investment_summary?.percent_return_per_stock && args?.investment_summary?.performanceData) &&
+          {(args) &&
             <>
               <div className="flex flex-col gap-4">
-                <LineChartComponent data={args?.investment_summary?.performanceData} size="small" />
-                <BarChartComponent data={Object.entries(args?.investment_summary?.percent_return_per_stock).map(([ticker, return1]) => ({
-                  ticker,
-                  return: return1 as number
-                }))} size="small" />
-                <AllocationTableComponent allocations={Object.entries(args?.investment_summary?.percent_allocation_per_stock).map(([ticker, allocation]) => ({
-                  ticker,
-                  allocation: allocation as number,
-                  currentValue: args?.investment_summary.final_prices[ticker] * args?.investment_summary.holdings[ticker],
-                  totalReturn: args?.investment_summary.percent_return_per_stock[ticker]
-                }))} size="small" />
+                <LineChartComponent data={args?.result as LineChartData[]} size="small" />
+                <BarChartComponent data={args?.totalReturns as BarChartData[]} size="small" />
+                <AllocationTableComponent allocations={args?.allocations as AllocationTableData[]} size="small" />
 
               </div>
 
@@ -126,34 +118,37 @@ export default function OpenStocksCanvas() {
                 onClick={() => {
                   debugger
                   if (respond) {
-                    setTotalCash(args?.investment_summary?.cash)
+                    // setTotalCash(args?.investment_summary?.cash)
                     setCurrentState({
                       ...currentState,
-                      returnsData: Object.entries(args?.investment_summary?.percent_return_per_stock).map(([ticker, return1]) => ({
-                        ticker,
-                        return: return1 as number
-                      })),
-                      allocations: Object.entries(args?.investment_summary?.percent_allocation_per_stock).map(([ticker, allocation]) => ({
-                        ticker,
-                        allocation: allocation as number,
-                        currentValue: args?.investment_summary?.final_prices[ticker] * args?.investment_summary?.holdings[ticker],
-                        totalReturn: args?.investment_summary?.percent_return_per_stock[ticker]
-                      })),
-                      performanceData: args?.investment_summary?.performanceData,
-                      bullInsights: args?.insights?.bullInsights || [],
-                      bearInsights: args?.insights?.bearInsights || [],
-                      currentPortfolioValue: args?.investment_summary?.total_value,
-                      totalReturns: (Object.values(args?.investment_summary?.returns) as number[])
-                        .reduce((acc, val) => acc + val, 0)
+                      // @ts-ignore
+                      performanceData: args?.result,
+                      returnsData: args?.totalReturns,
+                      allocations: args?.allocations,
+                      bullInsights: args?.bullInsights || [],
+                      bearInsights: args?.bearInsights || [],
+                      // returnsData: Object.entries(args?.investment_summary?.percent_return_per_stock).map(([ticker, return1]) => ({
+                      //   ticker,
+                      //   return: return1 as number
+                      // })),
+                      // allocations: Object.entries(args?.investment_summary?.percent_allocation_per_stock).map(([ticker, allocation]) => ({
+                      //   ticker,
+                      //   allocation: allocation as number,
+                      //   currentValue: args?.investment_summary?.final_prices[ticker] * args?.investment_summary?.holdings[ticker],
+                      //   totalReturn: args?.investment_summary?.percent_return_per_stock[ticker]
+                      // })),
+                      // currentPortfolioValue: args?.investment_summary?.total_value,
+                      // totalReturns: (Object.values(args?.investment_summary?.returns) as number[])
+                      //   .reduce((acc, val) => acc + val, 0)
                     })
-                    setInvestedAmount(
-                      (Object.values(args?.investment_summary?.total_invested_per_stock) as number[])
-                        .reduce((acc, val) => acc + val, 0)
-                    )
-                    setState({
-                      ...state,
-                      available_cash: totalCash,
-                    })
+                    // setInvestedAmount(
+                    //   (Object.values(args?.investment_summary?.total_invested_per_stock) as number[])
+                    //     .reduce((acc, val) => acc + val, 0)
+                    // )
+                    // setState({
+                    //   ...state,
+                    //   availableCash: totalCash,
+                    // })
                     respond("Data rendered successfully. Provide summary of the investments by not making any tool calls")
                   }
                 }}
@@ -222,7 +217,7 @@ export default function OpenStocksCanvas() {
 
   useCopilotReadable({
     description: "This is the current state of the portfolio",
-    value: JSON.stringify(state.investment_portfolio)
+    value: JSON.stringify(state.investmentPortfolio)
   })
 
   useCopilotChatSuggestions({
@@ -248,15 +243,15 @@ export default function OpenStocksCanvas() {
       id: "aapl-nvda",
       trigger: "apple nvidia",
       performanceData: [
-        { date: "Jan 2023", portfolio: 10000, spy: 10000 },
-        { date: "Mar 2023", portfolio: 10200, spy: 10200 },
-        { date: "Jun 2023", portfolio: 11000, spy: 11000 },
-        { date: "Sep 2023", portfolio: 10800, spy: 10800 },
-        { date: "Dec 2023", portfolio: 11500, spy: 11500 },
-        { date: "Mar 2024", portfolio: 12200, spy: 12200 },
-        { date: "Jun 2024", portfolio: 12800, spy: 12800 },
-        { date: "Sep 2024", portfolio: 13100, spy: 13100 },
-        { date: "Dec 2024", portfolio: 13600, spy: 13600 },
+        { date: "Jan 2023", portfolioValue : 10000, benchmarkValue: 10000 },
+        { date: "Mar 2023", portfolioValue : 10200, benchmarkValue: 10200 },
+        { date: "Jun 2023", portfolioValue : 11000, benchmarkValue: 11000 },
+        { date: "Sep 2023", portfolioValue : 10800, benchmarkValue: 10800 },
+        { date: "Dec 2023", portfolioValue : 11500, benchmarkValue: 11500 },
+        { date: "Mar 2024", portfolioValue : 12200, benchmarkValue: 12200 },
+        { date: "Jun 2024", portfolioValue : 12800, benchmarkValue: 12800 },
+        { date: "Sep 2024", portfolioValue : 13100, benchmarkValue: 13100 },
+        { date: "Dec 2024", portfolioValue : 13600, benchmarkValue: 13600 },
       ],
       allocations: [],
       returnsData: [],
