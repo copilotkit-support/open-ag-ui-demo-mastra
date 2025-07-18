@@ -83,7 +83,7 @@ const fetchInformationFromUserQuery = createStep({
         return msg
       });
       const model = new OpenAI()
-      console.log(data.messages[0].content,"PROMPT");
+      console.log(data.messages[0].content, "PROMPT");
       const response = await model.chat.completions.create({
         model: "gpt-4.1-mini",
         messages: data.messages,
@@ -114,11 +114,15 @@ const fetchInformationFromUserQuery = createStep({
         let toolResult
         if (typeof response?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments === "string") {
           toolResult = JSON.parse(response.choices[0].message.tool_calls[0].function.arguments);
+          // toolResult
         }
         else {
           toolResult = response?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments || {};
         }
-        console.log(toolResult,"TOOL RESULT");
+        if (new Date().getFullYear() - new Date(toolResult.investmentDate).getFullYear() > 4) {
+          toolResult.investmentDate = new Date(new Date(toolResult.investmentDate).setFullYear(new Date().getFullYear() - 4))
+        }
+        console.log(toolResult, "TOOL RESULT");
         if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
           let index = inputData.toolLogs.length - 1;
           inputData.emitEvent({
@@ -435,7 +439,7 @@ const calculateInvestmentReturns = createStep({
         const allDates = Array.from(new Set(preparedStockData.flatMap(stock => stock.data.map(d => d.date))
           .concat(benchmarkData.data.map(d => d.date)))).sort();
         // Calculate portfolio value and benchmark value for each date
-        const result = allDates.map(date => {
+        let result = allDates.map(date => {
           // Portfolio value: sum of shares * close for each ticker on this date
           let portfolioValue = 0;
           let hasPortfolioData = false;
@@ -453,10 +457,18 @@ const calculateInvestmentReturns = createStep({
 
           // Only include dates where both portfolio and benchmark have data
           if (hasPortfolioData && hasBenchmarkData) {
-            return { date: new Date(date).toLocaleDateString(), portfolioValue, benchmarkValue };
+            return { date: date, portfolioValue, benchmarkValue };
           }
           return null;
         }).filter((item): item is { date: string; portfolioValue: number; benchmarkValue: number } => item !== null); // Remove null entries
+        result = result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        result = result.map(item => {
+          return {
+            date: new Date(item.date).toLocaleDateString(),
+            portfolioValue: item.portfolioValue,
+            benchmarkValue: item.benchmarkValue
+          }
+        });
         // Calculate total returns for each ticker (as percentage)
         const totalReturns = preparedStockData.map((stock, idx) => {
           const investAmount = amount[idx];
