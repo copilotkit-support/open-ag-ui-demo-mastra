@@ -73,9 +73,8 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
     // Ensure the weather agent is properly configured and available
     if (!stockAnalysis) {
       throw new Error("Weather agent not found");
-    }    // STEP 9: Convert Message Format
-    // Transform AG-UI message format to Mastra-compatible format
-    // Filter out unsupported message roles and ensure proper structure
+    }    
+
     const mastraMessages = input.messages
       .filter((msg: Message) =>
         ["user", "system", "assistant"].includes(msg.role)
@@ -85,22 +84,14 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
         content: msg.content || "",
       }));
 
-    // STEP 10: Extract Location Information
-    // Parse the user's message to identify the location for weather query
-    // This helps with state tracking and provides context to the user
-    const userMessage = input.messages.find((msg) => msg.role === "user");
 
     function emitEvent(data: any) {
       res.write(encoder.encode(data));
     }
-
-    // STEP 13: Execute Weather Agent
-    // Call Mastra's weather agent with the processed messages
-    // This will use the configured tools and models to generate a response
-    const result = await stockAnalysis.createRunAsync();
-    const result2 = await result.start({
+    const workflow = await stockAnalysis.createRunAsync();
+    const result = await workflow.start({
       inputData: {
-        messages: mastraMessages,
+        messages: input.messages,
         availableCash: 100000,
         emitEvent: emitEvent,
         investmentPortfolio: input.state?.investmentPortfolio || []
@@ -115,7 +106,7 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
     })
     // console.log(result2);
     const messageId = uuidv4();
-    if (result2?.status === "success" && result2?.result?.result?.length > 0) {
+    if (result?.status === "success" && result?.result?.result?.length > 0) {
       const toolcallStart = {
         type: EventType.TOOL_CALL_START,
         toolCallId: uuidv4(),
@@ -126,7 +117,7 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
       const toolcallArgs = {
         type: EventType.TOOL_CALL_ARGS,
         toolCallId: toolcallStart.toolCallId,
-        delta: JSON.stringify(result2.result)
+        delta: JSON.stringify(result.result)
       }
       emitEvent(toolcallArgs);
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -146,7 +137,7 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
       res.write(encoder.encode(textMessageStart));
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      const response = "adsfg";
+      const response = result?.status === "success" ? result.result.textMessage : '';
 
       const chunkSize = 100; // Number of characters per chunk
       for (let i = 0; i < response.length; i += chunkSize) {
