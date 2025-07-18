@@ -19,22 +19,23 @@ export function BarChartComponent({ data, size = "normal", onClick }: BarChartCo
   const fontSize = size === "small" ? 8 : 10
   const tooltipFontSize = size === "small" ? "9px" : "11px"
   return (
-    <div className={`bg-white border border-[#D8D8E5] rounded-xl ${padding}`}>
+    <div className="border border-[#334155] rounded-xl bg-[#1a1a1a] p-4">
       <div style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8EF" />
-            <XAxis dataKey="ticker" stroke="#575758" fontSize={fontSize} fontFamily="Plus Jakarta Sans" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+            <XAxis dataKey="ticker" stroke="#94a3b8" fontSize={fontSize} fontFamily="Plus Jakarta Sans" />
             <YAxis
-              stroke="#575758"
+              stroke="#94a3b8"
               fontSize={fontSize}
               fontFamily="Plus Jakarta Sans"
               tickFormatter={(value) => `${value}%`}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "white",
-                border: "1px solid #D8D8E5",
+                backgroundColor: "#1a1a1a",
+                border: "1px solid #334155",
+                color: "#ededed",
                 borderRadius: "8px",
                 fontSize: tooltipFontSize,
                 fontFamily: "Plus Jakarta Sans",
@@ -48,7 +49,7 @@ export function BarChartComponent({ data, size = "normal", onClick }: BarChartCo
                 // @ts-ignore
                 onClick?.(data.payload.ticker as string)
               }
-            }} dataKey="rets" fill="#86ECE4" radius={[2, 2, 0, 0]} />
+            }} dataKey="rets" fill="#c084fc" radius={[2, 2, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

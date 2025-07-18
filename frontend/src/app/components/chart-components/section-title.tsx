@@ -4,8 +4,8 @@ interface SectionTitleProps {
 
 export function SectionTitle({ title }: SectionTitleProps) {
   return (
-    <div className="border-b border-[#D8D8E5] pb-1">
-      <h2 className="text-lg font-semibold text-[#030507] font-['Roobert']">{title}</h2>
+    <div className="border-b border-[#334155] pb-1">
+      <h2 className="text-lg font-semibold text-white font-['Roobert']">{title}</h2>
     </div>
   )
 }

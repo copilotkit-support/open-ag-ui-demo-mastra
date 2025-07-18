@@ -6,13 +6,17 @@ import yahooFinance from "yahoo-finance2";
 import OpenAI from "openai";
 import { userQueryExtractionTool } from "../tools/user-query-extraction-tool";
 import { gatherInsightsTool } from "../tools/gather-insights-tool";
-import e from "express";
+import { EventType } from "@ag-ui/core";
 
 
 const fetchInformationFromUserQuery = createStep({
   id: "fetch-information-from-user-query",
   description: "Fetches information from user query",
   inputSchema: z.object({
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
     messages: z.any(),
     availableCash: z.number().describe("The available cash of the user"),
     emitEvent: z.function().input(z.any()).output(z.any()),
@@ -22,29 +26,42 @@ const fetchInformationFromUserQuery = createStep({
     })).describe("The investment portfolio of the user")
   }),
   outputSchema: z.object({
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
     emitEvent: z.function(),
     investmentDate: z.string().describe("The date of investment from which user wants to invest"),
     tickers: z.array(z.string()).describe("The array of tickers or stocks that user wants to invest in"),
     amount: z.array(z.number()).describe("The amount of money to invest in each ticker or stock"),
     intervalOfInvestment: z.string().describe("The interval of investment. Mostly user doesnt provide it. AI needs to figure this one out. If the investment date is long assume the interval as '6mo' or '3mo'. If investment date is relatively less assume interval as '1mo' or '1wk' or '3d', etc"),
     benchmarkTicker: z.string().describe("The benchmark ticker to compare with"),
-    skip : z.boolean().describe("Whether to skip this step"),
-    textMessage : z.string().describe("The text message to display to the user")
+    skip: z.boolean().describe("Whether to skip this step"),
+    textMessage: z.string().describe("The text message to display to the user")
   }),
   execute: async ({ inputData }) => {
     try {
       let data = inputData;
       await new Promise(resolve => setTimeout(resolve, 0));
       data.messages[0].content = STOCK_ANALYST_PROMPT.replace("{portfolioDataContext}", JSON.stringify(inputData.investmentPortfolio));
-      // if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
-      //   inputData.emitEvent({
-      //     type: EventType.STATE_DELTA,
-      //     delta: [
-      //       { op: "replace", path: "/available_cash", value: 98 }
-      //     ]
-      //   });
-      //   await new Promise(resolve => setTimeout(resolve, 0));
-      // }
+      if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
+        inputData.emitEvent({
+          type: EventType.STATE_DELTA,
+          delta: [
+            {
+              op: "add", path: "/toolLogs/-", value: {
+                message: "Fetching information from user query",
+                status: "processing"
+              }
+            }
+          ]
+        });
+        inputData.toolLogs.push({
+          message: "Fetching information from user query",
+          status: "processing"
+        })
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
       data.messages = data.messages.map((msg: any) => {
         if (msg?.content == null || msg?.content == undefined) {
           return {
@@ -69,11 +86,23 @@ const fetchInformationFromUserQuery = createStep({
         tool_choice: "auto"
       })
       if (response.choices[0].finish_reason == 'stop') {
+        if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
+          let index = inputData.toolLogs.length - 1;
+          inputData.emitEvent({
+            type: EventType.STATE_DELTA,
+            delta: [
+              {
+                op: "replace", path: `/toolLogs/${index}/status`, value: "completed"
+              }
+            ]
+          });
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
         return {
           skip: true,
           availableCash: inputData.availableCash,
           emitEvent: inputData.emitEvent,
-          textMessage : response.choices[0].message.content
+          textMessage: response.choices[0].message.content
         }
       }
       else {
@@ -84,12 +113,25 @@ const fetchInformationFromUserQuery = createStep({
         else {
           toolResult = response?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments || {};
         }
+        if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
+          let index = inputData.toolLogs.length - 1;
+          inputData.emitEvent({
+            type: EventType.STATE_DELTA,
+            delta: [
+              {
+                op: "replace", path: `/toolLogs/${index}/status`, value: "completed"
+              }
+            ]
+          });
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
         return {
           ...toolResult,
           skip: false,
           availableCash: inputData.availableCash,
           emitEvent: inputData.emitEvent,
-          textMessage : ''
+          textMessage: '',
+          toolLogs: inputData.toolLogs
         }
       }
 
@@ -105,7 +147,11 @@ const gatherStockInformation = createStep({
   description: "Gathers stock information from yahoo finance",
   inputSchema: z.object({
     skip: z.boolean().describe("Whether to skip this step"),
-    textMessage : z.string().describe("The text message to display to the user"),
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
+    textMessage: z.string().describe("The text message to display to the user"),
     investmentDate: z.string().describe("The date of investment from which user wants to invest"),
     tickers: z.array(z.string()).describe("The array of tickers or stocks that user wants to invest in"),
     amount: z.array(z.number()).describe("The amount of money to invest in each ticker or stock"),
@@ -116,7 +162,11 @@ const gatherStockInformation = createStep({
   }),
   outputSchema: z.object({
     skip: z.boolean().describe("Whether to skip this step"),
-    textMessage : z.string().describe("The text message to display to the user"),
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
+    textMessage: z.string().describe("The text message to display to the user"),
     investmentDate: z.string().describe("The date of investment from which user wants to invest"),
     tickers: z.array(z.string()).describe("The array of tickers or stocks that user wants to invest in"),
     amount: z.array(z.number()).describe("The amount of money to invest in each ticker or stock"),
@@ -149,6 +199,24 @@ const gatherStockInformation = createStep({
     // }
     try {
       if (!inputData.skip) {
+        if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
+          inputData.emitEvent({
+            type: EventType.STATE_DELTA,
+            delta: [
+              {
+                op: "add", path: "/toolLogs/-", value: {
+                  message: "Fetching stock data",
+                  status: "processing"
+                }
+              }
+            ]
+          });
+          inputData.toolLogs.push({
+            message: "Fetching stock data",
+            status: "processing"
+          })
+          await new Promise(resolve => setTimeout(resolve, 2));
+        }
         const { tickers, investmentDate, intervalOfInvestment } = inputData;
         const period1 = investmentDate;
         const period2 = new Date(); // or use a specific end date if needed
@@ -204,7 +272,18 @@ const gatherStockInformation = createStep({
             }
           })
         };
-
+        if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
+          let index = inputData.toolLogs.length - 1;
+          inputData.emitEvent({
+            type: EventType.STATE_DELTA,
+            delta: [
+              {
+                op: "replace", path: `/toolLogs/${index}/status`, value: "completed"
+              }
+            ]
+          });
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
         return {
           ...inputData,
           preparedStockData,
@@ -214,11 +293,11 @@ const gatherStockInformation = createStep({
       else {
         return {
           ...inputData,
-          skip : true,
-          preparedStockData : [],
-          benchmarkData : {
-            ticker : inputData.benchmarkTicker,
-            data : []
+          skip: true,
+          preparedStockData: [],
+          benchmarkData: {
+            ticker: inputData.benchmarkTicker,
+            data: []
           }
         }
       }
@@ -234,8 +313,13 @@ const calculateInvestmentReturns = createStep({
   description: "Calculates investment returns for each ticker over time and validates available cash.",
   inputSchema: z.object({
     skip: z.boolean().describe("Whether to skip this step"),
-    textMessage : z.string().describe("The text message to display to the user"),
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
+    textMessage: z.string().describe("The text message to display to the user"),
     investmentDate: z.string(),
+    emitEvent: z.function(),
     tickers: z.array(z.string()),
     amount: z.array(z.number()),
     intervalOfInvestment: z.string(),
@@ -257,6 +341,10 @@ const calculateInvestmentReturns = createStep({
   }),
   outputSchema: z.object({
     tickers: z.array(z.string()).describe("The array of tickers or stocks that user wants to invest in"),
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
     skip: z.boolean().describe("Whether to skip this step"),
     availableCash: z.number().describe("Available cash after investments"),
     result: z.array(z.object({
@@ -273,11 +361,30 @@ const calculateInvestmentReturns = createStep({
       percentOfAllocation: z.number().describe("Percentage of allocation this ticker has"),
       value: z.number().describe("Current value of ticker in the portfolio"),
       returnPercent: z.number().describe("Percentage of return from this ticker")
-    }))
+    })),
+    emitEvent: z.function()
   }),
   execute: async ({ inputData }) => {
     try {
       if (!inputData.skip) {
+        if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
+          inputData.emitEvent({
+            type: EventType.STATE_DELTA,
+            delta: [
+              {
+                op: "add", path: "/toolLogs/-", value: {
+                  message: "Calculating investment returns",
+                  status: "processing"
+                }
+              }
+            ]
+          });
+          inputData.toolLogs.push({
+            message: "Calculating investment returns",
+            status: "processing"
+          })
+          await new Promise(resolve => setTimeout(resolve, 2));
+        }
         const { tickers, amount, availableCash, investmentDate, preparedStockData, benchmarkData } = inputData;
         // Validate available cash
         const totalInvestment = amount.reduce((a, b) => a + b, 0);
@@ -353,7 +460,18 @@ const calculateInvestmentReturns = createStep({
         });
         // Calculate available cash after investments
         const finalAvailableCash = availableCash - actualTotalInvestment;
-
+        if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
+          let index = inputData.toolLogs.length - 1;
+          inputData.emitEvent({
+            type: EventType.STATE_DELTA,
+            delta: [
+              {
+                op: "replace", path: `/toolLogs/${index}/status`, value: "completed"
+              }
+            ]
+          });
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
         return {
           tickers,
           skip: false,
@@ -361,15 +479,18 @@ const calculateInvestmentReturns = createStep({
           result,
           totalReturns,
           allocations,
+          toolLogs: inputData.toolLogs,
+          emitEvent: inputData.emitEvent
         };
       }
       else {
         return {
           ...inputData,
-          skip : true,
-          result : [],
-          totalReturns : [],
-          allocations : [],
+          skip: true,
+          result: [],
+          totalReturns: [],
+          allocations: [],
+          emitEvent: inputData.emitEvent
         }
       }
     } catch (error) {
@@ -384,7 +505,11 @@ const gatherInsights = createStep({
   description: "Gathers insights from the investment returns",
   inputSchema: z.object({
     skip: z.boolean().describe("Whether to skip this step"),
-    textMessage : z.string().describe("The text message to display to the user"),
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
+    textMessage: z.string().describe("The text message to display to the user"),
     tickers: z.array(z.string()).describe("The array of tickers or stocks that user wants to invest in"),
     availableCash: z.number().describe("Available cash after investments"),
     result: z.array(z.object({
@@ -401,11 +526,16 @@ const gatherInsights = createStep({
       percentOfAllocation: z.number().describe("Percentage of allocation this ticker has"),
       value: z.number().describe("Current value of ticker in the portfolio"),
       returnPercent: z.number().describe("Percentage of return from this ticker")
-    }))
+    })),
+    emitEvent: z.function()
   }),
   outputSchema: z.object({
     skip: z.boolean().describe("Whether to skip this step"),
-    textMessage : z.string().describe("The text message to display to the user"),
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
+    textMessage: z.string().describe("The text message to display to the user"),
     availableCash: z.number().describe("Available cash after investments"),
     result: z.array(z.object({
       date: z.string().describe("The date"),
@@ -431,18 +561,37 @@ const gatherInsights = createStep({
       title: z.string().describe("The title of the insight"),
       description: z.string().describe("The description of the insight"),
       emoji: z.string().describe("The emoji of the insight")
-    }))
+    })),
+    emitEvent: z.function()
   }),
   execute: async ({ inputData }) => {
     try {
       if (!inputData.skip) {
+        if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
+          inputData.emitEvent({
+            type: EventType.STATE_DELTA,
+            delta: [
+              {
+                op: "add", path: "/toolLogs/-", value: {
+                  message: "Generating insights",
+                  status: "processing"
+                }
+              }
+            ]
+          });
+          inputData.toolLogs.push({
+            message: "Generating insights",
+            status: "processing"
+          })
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
         const model = new OpenAI()
         const response = await model.chat.completions.create({
           model: "gpt-4o-mini",
           tools: [gatherInsightsTool as any],
           tool_choice: "required",
           messages: [
-            { role: "system", content: `You are a helpful assistant that generates insights for the tickers that user provides. Only one tool call is allowed. Within the same tool call, you can generate both bull and bear insights. You can generate as many insights as you want. But you can STRICTLY only generate one tool call. You can have insights for multiple tickers in the same tool call` },
+            { role: "system", content: `You are a helpful assistant that generates insights for the tickers that user provides. Only one tool call is allowed. Within the same tool call, you can generate both bull and bear insights. You can generate as many insights as you want. But you can STRICTLY only generate one tool call. You can have insights for multiple tickers in the same tool call. Make sure there should be 2 bull and 2 bear for each ticker.` },
             { role: "user", content: `Generate insights for the following tickers: ${inputData.tickers.join(", ")}` }
           ]
         })
@@ -453,7 +602,18 @@ const gatherInsights = createStep({
         else {
           toolResult = response?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments || {};
         }
-
+        if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
+          let index = inputData.toolLogs.length - 1;
+          inputData.emitEvent({
+            type: EventType.STATE_DELTA,
+            delta: [
+              {
+                op: "replace", path: `/toolLogs/${index}/status`, value: "completed"
+              }
+            ]
+          });
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
         return {
           ...inputData,
           ...toolResult
@@ -477,6 +637,10 @@ const stockAnalysisWorkflow = createWorkflow({
   inputSchema: z.object({
     messages: z.any(),
     availableCash: z.number().describe("The available cash of the user"),
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
     emitEvent: z.function().input(z.any()).output(z.any()),
     investmentPortfolio: z.array(z.object({
       ticker: z.string(),
@@ -485,7 +649,11 @@ const stockAnalysisWorkflow = createWorkflow({
   }),
   outputSchema: z.object({
     skip: z.boolean().describe("Whether to skip this step"),
-    textMessage : z.string().describe("The text message to display to the user"),
+    textMessage: z.string().describe("The text message to display to the user"),
+    toolLogs: z.array(z.object({
+      message: z.string().describe("The message to display to the user"),
+      status: z.string().describe("The status of the message")
+    })).describe("The tool logs of the workflow"),
     availableCash: z.number().describe("Available cash after investments"),
     result: z.array(z.object({
       date: z.string().describe("The date"),

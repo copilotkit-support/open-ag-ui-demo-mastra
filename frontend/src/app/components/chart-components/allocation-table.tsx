@@ -15,36 +15,36 @@ export function AllocationTableComponent({ allocations, size = "normal" }: Alloc
   const padding = size === "small" ? "py-1 px-2" : "py-2 px-3"
   const fontSize = size === "small" ? "text-[10px]" : "text-xs"
   return (
-    <div className="bg-white border border-[#D8D8E5] rounded-xl overflow-hidden">
+    <div className="border border-[#334155] rounded-xl overflow-hidden bg-[#1a1a1a]">
       <table className="w-full">
-        <thead className="bg-[#FAFCFA]">
+        <thead className="bg-[#0a0a0a]">
           <tr>
-            <th className={`text-left ${padding} ${fontSize} font-semibold text-[#030507] font-['Plus_Jakarta_Sans']`}>
+            <th className={`text-left ${padding} ${fontSize} font-semibold font-['Plus_Jakarta_Sans'] text-white`}>
               Ticker
             </th>
-            <th className={`text-left ${padding} ${fontSize} font-semibold text-[#030507] font-['Plus_Jakarta_Sans']`}>%</th>
-            <th className={`text-left ${padding} ${fontSize} font-semibold text-[#030507] font-['Plus_Jakarta_Sans']`}>
+            <th className={`text-left ${padding} ${fontSize} font-semibold font-['Plus_Jakarta_Sans'] text-white`}>%</th>
+            <th className={`text-left ${padding} ${fontSize} font-semibold font-['Plus_Jakarta_Sans'] text-white`}>
               Value
             </th>
-            <th className={`text-left ${padding} ${fontSize} font-semibold text-[#030507] font-['Plus_Jakarta_Sans']`}>
+            <th className={`text-left ${padding} ${fontSize} font-semibold font-['Plus_Jakarta_Sans'] text-white`}>
               Return
             </th>
           </tr>
         </thead>
         <tbody>
           {allocations?.map((allocation, index) => (
-            <tr key={allocation.ticker} className={index % 2 === 0 ? "bg-white" : "bg-[#FAFCFA]"}>
-              <td className={`font-medium text-[#030507] font-['Plus_Jakarta_Sans'] ${padding} ${fontSize}`}>
-                {allocation.ticker}
+            <tr key={allocation?.ticker} className={index % 2 === 0 ? "bg-[#1a1a1a]" : "bg-[#0a0a0a]"}>
+              <td className={`font-medium font-['Plus_Jakarta_Sans'] ${padding} ${fontSize} text-white`}>
+                {allocation?.ticker}
               </td>
-              <td className={`text-[#575758] font-['Plus_Jakarta_Sans'] ${padding} ${fontSize}`}>{allocation.percentOfAllocation.toFixed(2)}%</td>
-              <td className={`text-[#575758] font-['Plus_Jakarta_Sans'] ${padding} ${fontSize}`}>
-                ${(allocation.value).toFixed(1)}K
+              <td className={`font-['Plus_Jakarta_Sans'] ${padding} ${fontSize} text-[#94a3b8]`}>{allocation?.percentOfAllocation?.toFixed(2)}%</td>
+              <td className={`font-['Plus_Jakarta_Sans'] ${padding} ${fontSize} text-[#94a3b8]`}>
+                ${(allocation?.value || 0).toFixed(1)}K
               </td>
               <td className={`font-medium font-['Plus_Jakarta_Sans'] ${padding} ${fontSize}`}>
-                <span className={allocation.returnPercent >= 0 ? "text-[#1B606F]" : "text-red-600"}>
-                  {allocation.returnPercent >= 0 ? "+" : ""}
-                  {allocation.returnPercent.toFixed(1)}%
+                <span className={allocation?.returnPercent >= 0 ? "text-[#1B606F]" : "text-red-600"}>
+                  {allocation?.returnPercent >= 0 ? "+" : ""}
+                  {allocation?.returnPercent.toFixed(2)}%
                 </span>
               </td>
             </tr>

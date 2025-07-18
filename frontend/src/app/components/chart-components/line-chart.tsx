@@ -20,23 +20,23 @@ export function LineChartComponent({ data, size = "normal" }: LineChartComponent
   const tooltipFontSize = size === "small" ? "9px" : "11px"
   const legendFontSize = size === "small" ? "9px" : "11px"
   return (
-    <div className={`bg-white border border-[#D8D8E5] rounded-xl ${padding}`}>
+    <div className="border border-[#334155] rounded-xl bg-[#1a1a1a] p-4">
       <div style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E8E8EF" />
-            <XAxis dataKey="date" stroke="#575758" fontSize={fontSize} fontFamily="Plus Jakarta Sans" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+            <XAxis dataKey="date" stroke="#94a3b8" fontSize={fontSize} fontFamily="Plus Jakarta Sans" />
             <YAxis
-              stroke="#575758"
+              stroke="#94a3b8"
               fontSize={fontSize}
               fontFamily="Plus Jakarta Sans"
               tickFormatter={(value) => `$${(value / 1000).toFixed(0)}K`}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "white",
-                border: "1px solid #D8D8E5",
-                color: "#575758",
+                backgroundColor: "#1a1a1a",
+                border: "1px solid #334155",
+                color: "#ededed",
                 borderRadius: "8px",
                 fontSize: tooltipFontSize,
                 fontFamily: "Plus Jakarta Sans",
@@ -51,9 +51,10 @@ export function LineChartComponent({ data, size = "normal" }: LineChartComponent
                 fontSize: legendFontSize,
                 fontFamily: "Plus Jakarta Sans",
                 fontWeight: 500,
+                color: "#ededed",
               }}
             />
-            <Line type="monotone" dataKey="portfolioValue" stroke="#86ECE4" strokeWidth={2} name="Portfolio" dot={false} />
+            <Line type="monotone" dataKey="portfolioValue" stroke="#c084fc" strokeWidth={2} name="Portfolio" dot={false} />
             <Line type="monotone" dataKey="benchmarkValue" stroke="#BEC9FF" strokeWidth={2} name="SPY" dot={false} />
           </LineChart>
         </ResponsiveContainer>

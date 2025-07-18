@@ -25,9 +25,9 @@ export interface PortfolioState {
   }>
   allocations: Array<{
     ticker: string
-    allocation: number
-    currentValue: number
-    totalReturn: number
+    percentOfAllocation: number
+    value: number
+    returnPercent: number
   }>
   returnsData: Array<{
     ticker: string
@@ -90,10 +90,10 @@ export default function OpenStocksCanvas() {
     console.log(state, "state")
   }, [state])
 
-  // useCoAgentStateRender({
-  //   name: "mastraAgent",
-  //   render: ({state}) => <ToolLogs logs={state.tool_logs} />
-  // })
+  useCoAgentStateRender({
+    name: "mastraAgent",
+    render: ({state}) => <ToolLogs logs={state.toolLogs} />
+  })
 
   useCopilotAction({
     name: "render_standard_charts_and_table",
@@ -266,16 +266,16 @@ export default function OpenStocksCanvas() {
 
 
   return (
-    <div className="h-screen bg-[#FAFCFA] flex overflow-hidden">
+    <div className="h-screen bg-[#0a0a0a] flex overflow-hidden">
       {/* Left Panel - Prompt Input */}
-      <div className="w-85 border-r border-[#D8D8E5] bg-white flex-shrink-0">
+      <div className="w-85 border-r border-[#334155] bg-[#1a1a1a] flex-shrink-0">
         <PromptPanel availableCash={totalCash} />
       </div>
 
       {/* Center Panel - Generative Canvas */}
       <div className="flex-1 relative min-w-0">
         {/* Top Bar with Cash Info */}
-        <div className="absolute top-0 left-0 right-0 bg-white border-b border-[#D8D8E5] p-4 z-10">
+        <div className="absolute top-0 left-0 right-0 bg-[#1a1a1a] border-b border-[#334155] p-4 z-10">
           <CashPanel
             totalCash={totalCash}
             investedAmount={investedAmount}
@@ -285,15 +285,6 @@ export default function OpenStocksCanvas() {
           />
         </div>
 
-        {/* <div className="absolute top-4 right-4 z-20">
-          <button
-            onClick={toggleComponentTree}
-            className="px-3 py-1 text-xs font-semibold text-[#575758] bg-white border border-[#D8D8E5] rounded-md hover:bg-[#F0F0F4] transition-colors"
-          >
-            {showComponentTree ? "Hide Tree" : "Show Tree"}
-          </button>
-        </div> */}
-
         <div className="pt-20 h-full">
           <GenerativeCanvas setSelectedStock={setSelectedStock} portfolioState={currentState} sandBoxPortfolio={sandBoxPortfolio} setSandBoxPortfolio={setSandBoxPortfolio} />
         </div>
@@ -301,7 +292,7 @@ export default function OpenStocksCanvas() {
 
       {/* Right Panel - Component Tree (Optional) */}
       {showComponentTree && (
-        <div className="w-64 border-l border-[#D8D8E5] bg-white flex-shrink-0">
+        <div className="w-64 border-l border-[#334155] bg-[#1a1a1a] flex-shrink-0">
           <ComponentTree portfolioState={currentState} />
         </div>
       )}

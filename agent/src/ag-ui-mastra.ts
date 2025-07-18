@@ -94,7 +94,8 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
         messages: input.messages,
         availableCash: 100000,
         emitEvent: emitEvent,
-        investmentPortfolio: input.state?.investmentPortfolio || []
+        investmentPortfolio: input.state?.investmentPortfolio || [],
+        toolLogs: []
         // investmentSummary : {
         //   totalReturns : 0,
         //   currentPortfolioValue : 0,
@@ -104,6 +105,14 @@ app.post("/mastra-agent", async (req: Request, res: Response) => {
       }
 
     })
+
+    emitEvent({
+      type: EventType.STATE_DELTA,
+      delta: [
+        { op: "replace", path: "/toolLogs", value: [] }
+      ]
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0));
     // console.log(result2);
     const messageId = uuidv4();
     if (result?.status === "success" && result?.result?.result?.length > 0) {

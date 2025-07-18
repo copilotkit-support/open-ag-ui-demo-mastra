@@ -60,31 +60,31 @@ export function CashPanel({ totalCash, investedAmount, currentPortfolioValue, on
             <Wallet size={16} className="text-[#030507]" />
           </div>
           <div>
-            <div className="text-xs text-[#575758] font-medium">Total Cash</div>
+            <div className="text-xs text-[#94a3b8] font-medium">Total Cash</div>
             {isEditing ? (
               <div className="flex items-center gap-1">
                 <input
                   type="text"
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
-                  className="w-12 text-sm font-semibold text-[#030507] font-['Roobert']"
+                  className="w-12 text-sm font-semibold text-white bg-transparent font-['Roobert']"
                   onKeyDown={(e) => e.key === "Enter" && handleSave()}
                 />
                 <button onClick={handleSave} className="p-1 text-[#1B606F] hover:bg-[#86ECE4]/20 rounded">
                   <Check size={12} />
                 </button>
-                <button onClick={handleCancel} className="p-1 text-[#575758] hover:bg-[#F0F0F4] rounded">
+                <button onClick={handleCancel} className="p-1 text-[#94a3b8] hover:bg-[#334155] rounded">
                   <X size={12} />
                 </button>
               </div>
             ) : (
               <div className="flex items-center gap-1">
-                <span className="text-sm font-semibold text-[#030507] font-['Roobert']">
+                <span className="text-sm font-semibold text-white font-['Roobert']">
                   {formatCurrency(totalCash)}
                 </span>
                 <button
                   onClick={handleEdit}
-                  className="p-1 text-[#575758] hover:bg-[#F0F0F4] rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="p-1 text-[#94a3b8] hover:bg-[#334155] rounded opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   <Edit2 size={12} />
                 </button>
@@ -99,8 +99,8 @@ export function CashPanel({ totalCash, investedAmount, currentPortfolioValue, on
             <TrendingUp size={16} className="text-[#030507]" />
           </div>
           <div>
-            <div className="text-xs text-[#575758] font-medium">Invested</div>
-            <div className="text-sm font-semibold text-[#030507] font-['Roobert']">
+            <div className="text-xs text-[#94a3b8] font-medium">Invested</div>
+            <div className="text-sm font-semibold text-white font-['Roobert']">
               {formatCurrency(investedAmount)}
             </div>
           </div>
@@ -112,8 +112,8 @@ export function CashPanel({ totalCash, investedAmount, currentPortfolioValue, on
             <DollarSign size={16} className="text-[#030507]" />
           </div>
           <div>
-            <div className="text-xs text-[#575758] font-medium">Portfolio Value</div>
-            <div className="text-sm font-semibold text-[#030507] font-['Roobert']">
+            <div className="text-xs text-[#94a3b8] font-medium">Portfolio Value</div>
+            <div className="text-sm font-semibold text-white font-['Roobert']">
               {formatCurrency(currentPortfolioValue)}
             </div>
           </div>
@@ -129,7 +129,7 @@ export function CashPanel({ totalCash, investedAmount, currentPortfolioValue, on
             <Calendar size={16} className={fourYearReturn >= 0 ? "text-[#030507]" : "text-red-600"} />
           </div>
           <div>
-            <div className="text-xs text-[#575758] font-medium">4-Year Return</div>
+            <div className="text-xs text-[#94a3b8] font-medium">4-Year Return</div>
             <div className="flex items-center gap-2">
               <div
                 className={`text-sm font-semibold font-['Roobert'] ${
@@ -168,10 +168,10 @@ export function CashPanel({ totalCash, investedAmount, currentPortfolioValue, on
       {/* Investment Progress */}
       <div className="flex items-center gap-3">
         <div className="text-right">
-          <div className="text-xs text-[#575758] font-medium">Portfolio Allocation</div>
-          <div className="text-sm font-semibold text-[#030507] font-['Roobert']">{investedPercentage.toFixed(1)}%</div>
+          <div className="text-xs text-[#94a3b8] font-medium">Portfolio Allocation</div>
+          <div className="text-sm font-semibold text-white font-['Roobert']">{investedPercentage.toFixed(1)}%</div>
         </div>
-        <div className="w-20 h-2 bg-[#E8E8EF] rounded-full overflow-hidden">
+        <div className="w-20 h-2 bg-[#334155] rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-[#86ECE4] to-[#BEC9FF] transition-all duration-300"
             style={{ width: `${Math.min(investedPercentage, 100)}%` }}
