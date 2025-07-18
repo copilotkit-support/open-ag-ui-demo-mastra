@@ -13,7 +13,7 @@ import { NextRequest } from "next/server";
 
 // Create a new HttpAgent instance that connects to the LangGraph research backend running locally
 const mastraAgent = new HttpAgent({
-  url: process.env.NEXT_PUBLIC_MASTRA_URL || "http://localhost:8000/mastra-agent",
+  url: "http://localhost:8000/mastra-agent",
 });
 
 // Initialize the CopilotKit runtime with our research agent
