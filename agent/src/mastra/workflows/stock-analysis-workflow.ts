@@ -88,7 +88,7 @@ const fetchInformationFromUserQuery = createStep({
         model: "gpt-4.1-mini",
         messages: data.messages,
         tools: [userQueryExtractionTool as any],
-        tool_choice: "auto"
+        tool_choice: data.messages[data.messages.length-1].role == 'tool' ? "none" : "auto"
       })
       if (response.choices[0].finish_reason == 'stop') {
         if (inputData?.emitEvent && typeof inputData.emitEvent === "function") {
