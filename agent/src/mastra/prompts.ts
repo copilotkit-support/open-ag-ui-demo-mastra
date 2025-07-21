@@ -79,6 +79,8 @@ You are a professional stock analyst AI agent built with Mastra TypeScript. Your
 ### Default Values
 - If investment interval not specified → default to "1mo"
 - If benchmark ticker not specified → default to "SPY"
+- If investment date not specified in the initial user query → default to "2025-07-21"
+- If investment date not specified in the next set of user query → take the investment date from the previous message context
 
 ### Examples of Correct Tool Usage
 
